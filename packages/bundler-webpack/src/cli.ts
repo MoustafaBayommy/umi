@@ -1,3 +1,5 @@
+import { Server } from '@umijs/server';
+import { BundlerConfigType } from '@umijs/types';
 import {
   BabelRegister,
   chalk,
@@ -7,13 +9,11 @@ import {
   rimraf,
   yParser,
 } from '@umijs/utils';
-import { ConfigType } from '@umijs/bundler-utils';
-import { basename, extname, join } from 'path';
-import { Server } from '@umijs/server';
 import assert from 'assert';
 import { existsSync } from 'fs';
-import { Bundler } from './index';
+import { basename, extname, join } from 'path';
 import DevCompileDonePlugin from './DevCompileDonePlugin';
+import { Bundler } from './index';
 
 const args = yParser(process.argv.slice(2), {
   alias: {
@@ -38,6 +38,16 @@ if (args.version && !command) {
 }
 
 (async () => {
+  const configPath = join(cwd, args.config || 'config.ts');
+  const babelRegister = new BabelRegister();
+  babelRegister.setOnlyMap({
+    key: 'config',
+    value: [configPath],
+  });
+  const config = existsSync(configPath)
+    ? compatESModuleRequire(require(configPath))
+    : {};
+
   let entry: string = args.entry;
   if (entry) {
     entry = join(cwd, entry);
@@ -58,26 +68,17 @@ if (args.version && !command) {
     entry = files[0]?.path!;
   }
 
-  const configPath = join(cwd, args.config || 'config.ts');
-  const babelRegister = new BabelRegister();
-  babelRegister.setOnlyMap({
-    key: 'config',
-    value: [configPath],
-  });
-  const config = existsSync(configPath)
-    ? compatESModuleRequire(require(configPath))
-    : {};
-
   const bundler = new Bundler({
     cwd,
     config,
   });
 
+  // @ts-ignore
   const webpackConfig = await bundler.getConfig({
     env,
-    type: ConfigType.csr,
+    type: BundlerConfigType.csr,
     hot: args.hot,
-    entry: {
+    entry: config.entry || {
       [basename(entry, extname(entry))]: entry,
     },
   });
@@ -87,11 +88,13 @@ if (args.version && !command) {
     const { stats } = await bundler.build({
       bundleConfigs: [webpackConfig],
     });
+    // @ts-ignore
     console.log(stats.toString('normal'));
   } else if (command === 'dev') {
     const port = await portfinder.getPortPromise({
       port: 8000,
     });
+    // @ts-ignore
     webpackConfig.plugins!.push(new DevCompileDonePlugin({ port }));
     const devServerOpts = bundler.setupDevServerOpts({
       bundleConfigs: [webpackConfig],

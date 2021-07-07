@@ -1,6 +1,6 @@
+import { IApi } from '@umijs/types';
 import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
-import { IApi } from '@umijs/types';
 
 export default (api: IApi) => {
   api.describe({
@@ -26,7 +26,7 @@ export default (api: IApi) => {
       content: api.utils.Mustache.render(
         readFileSync(join(__dirname, 'polyfill.tpl'), 'utf-8'),
         {
-          imports: polyfill?.imports ? polyfill.imports : [],
+          imports: polyfill && polyfill?.imports ? polyfill.imports : [],
         },
       ),
       path: 'core/polyfill.ts',

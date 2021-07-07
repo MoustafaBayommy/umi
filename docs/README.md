@@ -25,11 +25,12 @@ features:
   - icon: https://gw.alipayobjects.com/zos/basement_prod/d078a5a9-1cb3-4352-9f05-505c2e98bc95/k7788v4b_w102_h126.png
     title: Future Ready
     desc: Umi's community is also exploring new technologies. For example, modern mode, webpack @ 5, automated external, bundler less, etc.
-footer: Open-source MIT Licensed | Copyright © 2017-present
-
+footer: Open-source MIT Licensed | Copyright © 2017-present<br />Powered by [dumi](https://d.umijs.org/).
 ---
 
 ## Getting Started in 3 minutes
+
+[![Edit umi](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/umi-2d4js?autoresize=1&fontsize=14&hidenavigation=1&module=%2Fsrc%2Fpages%2Findex.tsx&theme=dark)
 
 Manually,
 
@@ -38,7 +39,7 @@ Manually,
 $ mkdir myapp && cd myapp
 
 # Install dependency
-$ yarn add umi@next
+$ yarn add umi
 
 # Create page
 $ npx umi g page index --typescript --less
@@ -57,6 +58,6 @@ This project exists thanks to all the people who contribute. [Join us!](/docs/co
 
 ## Feedback
 
-| Github Issue | DingTalk | Wechat |
-| --- | --- | --- |
-| [umijs/umi/issues](https://github.com/umijs/umi/issues) | <img src="https://img.alicdn.com/tfs/TB1KxCae9f2gK0jSZFPXXXsopXa-1125-1485.jpg" width="60" /> | <img src="https://img.alicdn.com/tfs/TB1pd1ce8r0gK0jSZFnXXbRRXXa-430-430.jpg" width="60" /> |
+| Github Issue | 微信群 |
+| --- | --- |
+| [umijs/umi/issues](https://github.com/umijs/umi/issues) | <img src="https://img.alicdn.com/imgextra/i1/O1CN01jmrjUx1yw5LcPFMx0_!!6000000006642-0-tps-430-430.jpg" width="60" /> 关注后回复「umi」 |

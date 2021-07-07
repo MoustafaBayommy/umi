@@ -1,27 +1,41 @@
-import { IApi } from 'umi';
+import { IApi, utils } from 'umi';
 
 export default (api: IApi) => {
+  const { deepmerge } = utils;
   api.describe({
-    key: 'forkTSCheker',
+    key: 'forkTSChecker',
     config: {
       schema(joi) {
-        return joi.object();
+        return joi
+          .object({
+            async: joi.boolean(),
+            typescript: joi.alternatives(joi.boolean(), joi.object()),
+            eslint: joi.object(),
+            issue: joi.object(),
+            formatter: joi.alternatives(joi.string(), joi.object()),
+            logger: joi.object(),
+          })
+          .unknown()
+          .description(
+            'fork-ts-checker-webpack-plugin options see https://github.com/TypeStrong/fork-ts-checker-webpack-plugin#options',
+          );
       },
     },
     enableBy: () =>
-      (process.env.FORK_TS_CHECKER || !!api.config?.forkTSCheker) as boolean,
+      (process.env.FORK_TS_CHECKER || !!api.config?.forkTSChecker) as boolean,
   });
 
   api.chainWebpack((webpackConfig) => {
     webpackConfig
       .plugin('fork-ts-checker')
-      .use(require('fork-ts-checker-webpack-plugin'), [
-        {
-          formatter: 'codeframe',
-          // parallel
-          async: false,
-          checkSyntacticErrors: true,
-        },
+      .use(require('@umijs/deps/compiled/fork-ts-checker-webpack-plugin'), [
+        deepmerge(
+          {
+            formatter: 'codeframe',
+            async: false,
+          },
+          api.config?.forkTSChecker || {},
+        ),
       ]);
     return webpackConfig;
   });

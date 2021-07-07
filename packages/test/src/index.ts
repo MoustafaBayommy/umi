@@ -1,10 +1,10 @@
-import { runCLI } from 'jest';
 // @ts-ignore
 import { createDebug, mergeConfig } from '@umijs/utils';
-import { options as CliOptions } from 'jest-cli/build/cli/args';
 import assert from 'assert';
-import { join } from 'path';
 import { existsSync } from 'fs';
+import { runCLI } from 'jest';
+import { options as CliOptions } from 'jest-cli/build/cli/args';
+import { join } from 'path';
 import createDefaultConfig from './createDefaultConfig/createDefaultConfig';
 import { IUmiTestArgs, PickedJestCliOptions } from './types';
 
@@ -53,7 +53,7 @@ export default async function (args: IUmiTestArgs) {
 
   // Generate jest options
   const argsConfig = Object.keys(CliOptions).reduce((prev, name) => {
-    if (args[name]) prev[name] = name;
+    if (args[name]) prev[name] = args[name];
 
     // Convert alias args into real one
     const { alias } = CliOptions[name];

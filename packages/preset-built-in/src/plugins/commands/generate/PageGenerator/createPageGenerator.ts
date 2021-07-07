@@ -1,6 +1,6 @@
-import { join, basename } from 'path';
 import { IApi } from '@umijs/types';
 import { Generator, randomColor } from '@umijs/utils';
+import { basename, join } from 'path';
 
 export default function ({ api }: { api: IApi }) {
   return class PageGenerator extends Generator {
@@ -18,7 +18,7 @@ export default function ({ api }: { api: IApi }) {
         target: join(api.paths.absPagesPath!, `${path}${jsExt}`),
         context: {
           path,
-          name: basename(path),
+          name: basename(path as string),
           cssExt,
         },
       });

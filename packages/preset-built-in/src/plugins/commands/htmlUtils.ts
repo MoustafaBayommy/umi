@@ -1,11 +1,12 @@
 import { IApi, IRoute, webpack } from '@umijs/types';
-import { extname, join } from 'path';
-import { existsSync } from 'fs';
 import { lodash } from '@umijs/utils';
 import assert from 'assert';
+import { existsSync } from 'fs';
+import { extname, join } from 'path';
 
 interface IGetContentArgs {
   route: IRoute;
+  assets?: any;
   chunks?: any;
   noChunk?: boolean;
 }
@@ -26,7 +27,7 @@ export function chunksToFiles(opts: {
 }): { cssFiles: string[]; jsFiles: string[]; headJSFiles: string[] } {
   let chunksMap: IChunkMap = {};
   if (opts.chunks) {
-    chunksMap = opts.chunks.reduce((memo, chunk) => {
+    chunksMap = Array.from(opts.chunks).reduce((memo, chunk) => {
       const key = chunk.name || chunk.id;
       if (key && chunk.files) {
         chunk.files.forEach((file) => {
@@ -98,12 +99,15 @@ export function getHtmlGenerator({ api }: { api: IApi }): any {
       let routerBaseStr = JSON.stringify(api.config.base);
       let publicPathStr = JSON.stringify(api.config.publicPath);
 
-      if (api.config.exportStatic?.dynamicRoot) {
+      if (api.config.exportStatic && api.config.exportStatic?.dynamicRoot) {
         routerBaseStr = `location.pathname.split('/').slice(0, -${
           args.route.path!.split('/').length - 1
         }).concat('').join('/')`;
         publicPathStr = `location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') + window.routerBase`;
       }
+
+      // window.resourceBaseUrl 用来兼容 egg.js 项目注入的 publicPath
+      publicPathStr = `window.resourceBaseUrl || ${publicPathStr};`;
 
       publicPathStr = await api.applyPlugins({
         key: 'modifyPublicPathStr',
@@ -120,6 +124,8 @@ export function getHtmlGenerator({ api }: { api: IApi }): any {
         initialValue: api.config.chunks || ['umi'],
         args: {
           route: args.route,
+          assets: args.assets,
+          chunks: args.chunks,
         },
       });
       const { cssFiles, jsFiles, headJSFiles } = chunksToFiles({
@@ -191,6 +197,10 @@ export function getHtmlGenerator({ api }: { api: IApi }): any {
   return new Html();
 }
 
+/**
+ * flatten routes using routes config
+ * @param opts
+ */
 export function getFlatRoutes(opts: { routes: IRoute[] }): IRoute[] {
   return opts.routes.reduce((memo, route) => {
     const { routes, path } = route;

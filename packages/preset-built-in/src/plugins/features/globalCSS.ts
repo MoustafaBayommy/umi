@@ -1,6 +1,6 @@
-import { relative } from 'path';
 import { IApi } from '@umijs/types';
 import { createDebug } from '@umijs/utils';
+import { relative } from 'path';
 import { getGlobalFile } from '../utils';
 
 const debug = createDebug('umi:preset-build-in:global-css');
@@ -25,7 +25,7 @@ export default (api: IApi) => {
   api.addEntryCodeAhead(
     () =>
       `${globalCSSFile
-        .map((file) => `require('${winPath(relative(absTmpPath, file))}');`)
+        .map((file) => `import '${winPath(relative(absTmpPath, file))}';`)
         .join('')}`,
   );
 };

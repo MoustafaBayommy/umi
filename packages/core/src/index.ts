@@ -1,14 +1,13 @@
 import Config from './Config/Config';
 import { IConfig } from './Config/types';
 import Html from './Html/Html';
-import { IScriptConfig, IStyleConfig, IHTMLTag } from './Html/types';
+import { IHTMLTag, IScriptConfig, IStyleConfig } from './Html/types';
+import Logger from './Logger/Logger';
 import Route from './Route/Route';
 import { IRoute } from './Route/types';
-import Service, { IServiceOpts } from './Service/Service';
-import PluginAPI from './Service/PluginAPI';
-import UmiError from './Logger/UmiError';
-import Logger from './Logger/Logger';
 import { PluginType } from './Service/enums';
+import PluginAPI from './Service/PluginAPI';
+import Service, { IServiceOpts } from './Service/Service';
 import { isPluginOrPreset } from './Service/utils/pluginUtils';
 
 export {
@@ -21,4 +20,4 @@ export {
   PluginType,
 };
 export { IRoute, IConfig, IServiceOpts, IScriptConfig, IStyleConfig, IHTMLTag };
-export { Logger, UmiError };
+export { Logger };

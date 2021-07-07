@@ -1,10 +1,10 @@
+import { getExportProps, isReactComponent } from '@umijs/ast';
+import { getFile, winPath } from '@umijs/utils';
+import assert from 'assert';
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import { basename, extname, join, relative } from 'path';
-import { getFile, winPath } from '@umijs/utils';
-import { getExportProps, isReactComponent } from '@umijs/ast';
-import assert from 'assert';
-import { IRoute } from './types';
 import { IConfig } from '..';
+import { IRoute } from './types';
 
 interface IOpts {
   root: string;
@@ -16,6 +16,7 @@ interface IOpts {
 // 考虑多种情况：
 // 可能是目录，没有后缀，比如 [post]/add.tsx
 // 可能是文件，有后缀，比如 [id].tsx
+// [id$] 是可选动态路由
 const RE_DYNAMIC_ROUTE = /^\[(.+?)\]/;
 
 function getFiles(root: string) {
@@ -40,7 +41,13 @@ function getFiles(root: string) {
     if (isFile) {
       if (!/\.(j|t)sx?$/.test(file)) return false;
       const content = readFileSync(absFile, 'utf-8');
-      if (!isReactComponent(content)) return false;
+      try {
+        if (!isReactComponent(content)) return false;
+      } catch (e) {
+        throw new Error(
+          `Parse conventional route component ${absFile} failed, ${e.message}`,
+        );
+      }
     }
     return true;
   });
@@ -94,15 +101,21 @@ function fileToRouteReducer(opts: IOpts, memo: IRoute[], file: string) {
 }
 
 function normalizeRoute(route: IRoute, opts: IOpts) {
-  let props = {};
+  let props: unknown = undefined;
   if (route.component) {
-    props = getExportProps(readFileSync(route.component, 'utf-8'));
+    try {
+      props = getExportProps(readFileSync(route.component, 'utf-8'));
+    } catch (e) {
+      throw new Error(
+        `Parse conventional route component ${route.component} failed, ${e.message}`,
+      );
+    }
     route.component = winPath(relative(join(opts.root, '..'), route.component));
     route.component = `${opts.componentPrefix || '@/'}${route.component}`;
   }
   return {
     ...route,
-    ...props,
+    ...(typeof props === 'object' ? props : {}),
   };
 }
 
@@ -112,6 +125,11 @@ function normalizePath(path: string, opts: IOpts) {
     .map((p) => {
       // dynamic route
       p = p.replace(RE_DYNAMIC_ROUTE, ':$1');
+
+      // :post$ => :post?
+      if (p.endsWith('$')) {
+        p = p.slice(0, -1) + '?';
+      }
       return p;
     })
     .join('/');

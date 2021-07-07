@@ -24,12 +24,13 @@ features:
     desc: 同时支持配置式路由和约定式路由，同时保持功能的完备性，比如动态路由、嵌套路由、权限路由等等。
   - icon: https://gw.alipayobjects.com/zos/basement_prod/d078a5a9-1cb3-4352-9f05-505c2e98bc95/k7788v4b_w102_h126.png
     title: 面向未来
-    desc: 在满足需求的同时，我们也不会停止对新技术的探索。比如 modern mode、webpack@5、自动化化 external、bundler less 等等。
-footer: Open-source MIT Licensed | Copyright © 2017-present
-
+    desc: 在满足需求的同时，我们也不会停止对新技术的探索。比如 modern mode、webpack@5、自动化 external、bundler less 等等。
+footer: Open-source MIT Licensed | Copyright © 2017-present<br />Powered by [dumi](https://d.umijs.org/).
 ---
 
 ## 三分钟上手 Umi
+
+[![Edit umi](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/umi-2d4js?autoresize=1&fontsize=14&hidenavigation=1&module=%2Fsrc%2Fpages%2Findex.tsx&theme=dark)
 
 手动创建文件，
 
@@ -38,7 +39,7 @@ footer: Open-source MIT Licensed | Copyright © 2017-present
 $ mkdir myapp && cd myapp
 
 # 安装依赖
-$ yarn add umi@next
+$ yarn add umi
 
 # 创建页面
 $ npx umi g page index --typescript --less
@@ -57,6 +58,6 @@ This project exists thanks to all the people who contribute. [Join us!](/zh-CN/d
 
 ## 反馈
 
-| Github Issue | 钉钉群 | 微信群 |
-| --- | --- | --- |
-| [umijs/umi/issues](https://github.com/umijs/umi/issues) | <img src="https://img.alicdn.com/tfs/TB1KxCae9f2gK0jSZFPXXXsopXa-1125-1485.jpg" width="60" /> | <img src="https://img.alicdn.com/tfs/TB1pd1ce8r0gK0jSZFnXXbRRXXa-430-430.jpg" width="60" /> |
+| Github Issue | 微信群 |
+| --- | --- |
+| [umijs/umi/issues](https://github.com/umijs/umi/issues) | <img src="https://img.alicdn.com/imgextra/i1/O1CN01jmrjUx1yw5LcPFMx0_!!6000000006642-0-tps-430-430.jpg" width="60" /> 关注后回复「umi」 |

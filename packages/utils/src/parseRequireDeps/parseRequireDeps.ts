@@ -1,9 +1,11 @@
-import resolve from 'resolve';
-import { dirname } from 'path';
 // @ts-ignore
-import crequire from 'crequire';
+// @ts-ignore
+import crequire from '@umijs/deps/compiled/crequire';
+// @ts-ignore
+import lodash from '@umijs/deps/compiled/lodash';
+import resolve from '@umijs/deps/compiled/resolve';
 import { readFileSync } from 'fs';
-import lodash from 'lodash';
+import { dirname } from 'path';
 import winPath from '../winPath/winPath';
 
 function parse(filePath: string): string[] {

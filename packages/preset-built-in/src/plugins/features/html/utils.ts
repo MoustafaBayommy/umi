@@ -1,5 +1,5 @@
-import { lodash } from '@umijs/utils';
 import { IScriptConfig, IStyleConfig } from '@umijs/types';
+import { lodash } from '@umijs/utils';
 
 export interface IHTMLTag {
   [key: string]: string;
@@ -7,13 +7,17 @@ export interface IHTMLTag {
 
 const EXP_URL = /^(http:|https:)?\/\//;
 
+export function deepUniq<T>(collection: T[]): T[] {
+  return lodash.uniqWith(collection, lodash.isEqual);
+}
+
 /**
  * 格式化 script => object
  * @param option Array<string | IScript>
  */
 export const getScripts = (option: IScriptConfig): IScriptConfig => {
   if (Array.isArray(option) && option.length > 0) {
-    return option
+    const scripts = option
       .filter((script) => !lodash.isEmpty(script))
       .map((aScript) => {
         if (typeof aScript === 'string') {
@@ -24,6 +28,7 @@ export const getScripts = (option: IScriptConfig): IScriptConfig => {
         // [{ content: '', async: true, crossOrigin: true }]
         return aScript;
       });
+    return deepUniq(scripts);
   }
   return [];
 };
@@ -54,9 +59,9 @@ export const getStyles = (option: IStyleConfig): [IHTMLTag[], IHTMLTag[]] => {
       }
       if (typeof style === 'object') {
         // is style object
-        styleObj.push(style);
+        styleObj.push(style as unknown as IHTMLTag);
       }
     });
   }
-  return [linkArr, styleObj];
+  return [deepUniq(linkArr), deepUniq(styleObj)];
 };

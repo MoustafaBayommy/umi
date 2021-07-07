@@ -61,6 +61,7 @@ $ npm run release
 $ npm run release -- --publish-only
 $ npm run release -- --skip-git-status-check
 $ npm run release -- --skip-build
+$ npm run release -- --otp
 ```
 
 ## Create new package
@@ -92,4 +93,61 @@ $ yarn update:deps
 ```bash
 # add doc
 $ yarn docs add docs/routing --title Routing
+```
+
+## Examples
+
+Umi 3 examples in `examples/*` directory
+
+### Running the Examples apps
+
+Running examples:
+
+```sh
+yarn example dev examples/normal
+```
+
+### Create new examples
+
+Such as creating example `hello-world`.
+
+```bash
+$ mkdir -p examples/hello-world
+$ yarn bootstrap:examples
+```
+
+Then you will find the `README.md` and `package.json` is generated in `examples/hello-world`.
+
+```bash
+$ tree examples/hello-world
+examples/hello-world
+├── pages/index.tsx
+├── README.md
+└── package.json
+```
+
+## Benchmarks
+
+if you want to add a benchmark, you can add `examples/*/benchmark.js` like this:
+
+```js
+// examples/ssr-normal/benchmark.js
+module.exports = (suite) => {
+  // add tests
+  suite
+    // your logic
+    .add('ssr#normal /')
+    // your logic
+    .add('ssr#normal#stream /');
+};
+```
+
+and run `yarn benchmark` to see the result:
+
+```bash
+$ node scripts/benchmarks.js
+☐  pending   building .../examples/ssr-normal
+☒  complete  success build .../examples/ssr-normal
+ssr#normal / x 2,400 ops/sec ±2.08% (76 runs sampled)
+ssr#normal#stream / x 4,026 ops/sec ±1.45% (50 runs sampled)
 ```

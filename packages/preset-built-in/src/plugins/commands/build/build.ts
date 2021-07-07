@@ -1,7 +1,7 @@
-import { IApi } from '@umijs/types';
-import { relative } from 'path';
-import { existsSync } from 'fs';
 import { Logger } from '@umijs/core';
+import { IApi } from '@umijs/types';
+import { existsSync } from 'fs';
+import { relative } from 'path';
 import {
   cleanTmpPathExceptCache,
   getBundleAndConfigs,
@@ -14,7 +14,7 @@ const logger = new Logger('umi:preset-build-in');
 export default function (api: IApi) {
   const {
     paths,
-    utils: { rimraf, chalk },
+    utils: { rimraf },
   } = api;
 
   api.registerCommand({
@@ -29,11 +29,8 @@ export default function (api: IApi) {
       await generateFiles({ api, watch: false });
 
       // build
-      const {
-        bundler,
-        bundleConfigs,
-        bundleImplementor,
-      } = await getBundleAndConfigs({ api });
+      const { bundler, bundleConfigs, bundleImplementor } =
+        await getBundleAndConfigs({ api });
       try {
         // clear output path before exec build
         if (process.env.CLEAR_OUTPUT !== 'none') {
@@ -48,9 +45,11 @@ export default function (api: IApi) {
           bundleImplementor,
         });
         if (process.env.RM_TMPDIR !== 'none') {
-          rimraf.sync(paths.absTmpPath!);
+          cleanTmpPathExceptCache({
+            absTmpPath: paths.absTmpPath!,
+          });
         }
-        printFileSizes(stats, relative(api.cwd, paths.absOutputPath || ''));
+        printFileSizes(stats!, relative(process.cwd(), paths.absOutputPath!));
         await api.applyPlugins({
           key: 'onBuildComplete',
           type: api.ApplyPluginsType.event,

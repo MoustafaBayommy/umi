@@ -1,20 +1,21 @@
-import { existsSync } from 'fs';
-import { extname, join } from 'path';
+import joi from '@umijs/deps/compiled/@hapi/joi';
 import {
   chalk,
   chokidar,
-  compatESModuleRequire,
-  deepmerge,
   cleanRequireCache,
+  compatESModuleRequire,
+  createDebug,
+  deepmerge,
+  getFile,
   lodash,
   parseRequireDeps,
   winPath,
-  createDebug,
 } from '@umijs/utils';
 import assert from 'assert';
-import joi from '@hapi/joi';
-import Service from '../Service/Service';
+import { existsSync } from 'fs';
+import { extname, join } from 'path';
 import { ServiceStage } from '../Service/enums';
+import Service from '../Service/Service';
 import {
   getUserConfigWithKey,
   updateUserConfigWithKey,
@@ -33,9 +34,10 @@ interface IOpts {
   cwd: string;
   service: Service;
   localConfig?: boolean;
+  configFiles?: string[];
 }
 
-const CONFIG_FILES = [
+const DEFAULT_CONFIG_FILES = [
   '.umirc.ts',
   '.umirc.js',
   'config/config.ts',
@@ -50,11 +52,17 @@ export default class Config {
   config?: object;
   localConfig?: boolean;
   configFile?: string | null;
+  configFiles = DEFAULT_CONFIG_FILES;
 
   constructor(opts: IOpts) {
     this.cwd = opts.cwd || process.cwd();
     this.service = opts.service;
     this.localConfig = opts.localConfig;
+
+    if (Array.isArray(opts.configFiles)) {
+      // 配置的优先读取
+      this.configFiles = lodash.uniq(opts.configFiles.concat(this.configFiles));
+    }
   }
 
   async getDefaultConfig() {
@@ -145,8 +153,20 @@ export default class Config {
     if (configFile) {
       let envConfigFile;
       if (process.env.UMI_ENV) {
-        envConfigFile = this.addAffix(configFile, process.env.UMI_ENV);
-        if (!existsSync(join(this.cwd, envConfigFile))) {
+        const envConfigFileName = this.addAffix(
+          configFile,
+          process.env.UMI_ENV,
+        );
+        const fileNameWithoutExt = envConfigFileName.replace(
+          extname(envConfigFileName),
+          '',
+        );
+        envConfigFile = getFile({
+          base: this.cwd,
+          fileNameWithoutExt,
+          type: 'javascript',
+        })?.filename;
+        if (!envConfigFile) {
           throw new Error(
             `get user config failed, ${envConfigFile} does not exist, but process.env.UMI_ENV is set to ${process.env.UMI_ENV}.`,
           );
@@ -199,14 +219,16 @@ export default class Config {
 
   getConfigFile(): string | null {
     // TODO: support custom config file
-    const configFile = CONFIG_FILES.find((f) => existsSync(join(this.cwd, f)));
+    const configFile = this.configFiles.find((f) =>
+      existsSync(join(this.cwd, f)),
+    );
     return configFile ? winPath(configFile) : null;
   }
 
   getWatchFilesAndDirectories() {
     const umiEnv = process.env.UMI_ENV;
-    const configFiles = lodash.clone(CONFIG_FILES);
-    CONFIG_FILES.forEach((f) => {
+    const configFiles = lodash.clone(this.configFiles);
+    this.configFiles.forEach((f) => {
       if (this.localConfig) configFiles.push(this.addAffix(f, 'local'));
       if (umiEnv) configFiles.push(this.addAffix(f, umiEnv));
     });

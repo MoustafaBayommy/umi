@@ -1,14 +1,18 @@
-import { IConfig } from '@umijs/types';
-import defaultWebpack from 'webpack';
-import webpackDevMiddleware from 'webpack-dev-middleware';
+import * as defaultWebpack from '@umijs/deps/compiled/webpack';
+import webpackDevMiddleware from '@umijs/deps/compiled/webpack-dev-middleware';
 import { IServerOpts, Server } from '@umijs/server';
-import { ConfigType } from '@umijs/bundler-utils';
+import { BundlerConfigType, IConfig } from '@umijs/types';
+import { lodash as _, winPath } from '@umijs/utils';
+import { join } from 'path';
 import getConfig, { IOpts as IGetConfigOpts } from './getConfig/getConfig';
 
 interface IOpts {
   cwd: string;
   config: IConfig;
 }
+
+defaultWebpack.init(!!process.env.USE_WEBPACK_5);
+require('./requireHook').init();
 
 class Bundler {
   static id = 'webpack';
@@ -34,23 +38,63 @@ class Bundler {
   async build({
     bundleConfigs,
     bundleImplementor = defaultWebpack,
+    watch,
+    onBuildComplete,
   }: {
     bundleConfigs: defaultWebpack.Configuration[];
     bundleImplementor?: typeof defaultWebpack;
-  }): Promise<{ stats: defaultWebpack.Stats }> {
+    watch?: boolean;
+    onBuildComplete?: any;
+  }): Promise<{ stats?: defaultWebpack.Stats; compiler: any }> {
     return new Promise((resolve, reject) => {
-      const compiler = bundleImplementor(bundleConfigs);
-      compiler.run((err, stats) => {
-        if (err || stats.hasErrors()) {
-          try {
-            console.log(stats.toString('errors-only'));
-          } catch (e) {}
-          return reject(new Error('build failed'));
-        }
-        resolve({ stats });
-      });
+      const compiler = bundleImplementor.webpack(bundleConfigs);
+      if (watch) {
+        compiler.watch({}, (err, stats) => {
+          onBuildComplete?.(err, stats);
+          if (err || stats.hasErrors()) {
+            try {
+              console.log(stats.toString('errors-only'));
+            } catch (e) {}
+            console.error(err);
+          }
+        });
+        resolve({ compiler });
+      } else {
+        compiler.run((err, stats) => {
+          onBuildComplete?.(err, stats);
+          if (err || stats.hasErrors()) {
+            try {
+              console.log(stats.toString('errors-only'));
+            } catch (e) {}
+            console.error(err);
+            return reject(new Error('build failed'));
+          }
+          // ref: https://github.com/webpack/webpack/issues/12345#issuecomment-755273757
+          // @ts-ignore
+          compiler.close?.();
+          // @ts-ignore
+          resolve({ stats, compiler });
+        });
+      }
     });
   }
+
+  /**
+   * get ignored watch dirs regexp, for test case
+   */
+  getIgnoredWatchRegExp =
+    (): defaultWebpack.Options.WatchOptions['ignored'] => {
+      const { outputPath } = this.config;
+      const absOutputPath = _.escapeRegExp(
+        winPath(join(this.cwd, outputPath as string, '/')),
+      );
+      // need ${sep} after outputPath
+      return process.env.WATCH_IGNORED === 'none'
+        ? undefined
+        : new RegExp(
+            process.env.WATCH_IGNORED || `(node_modules|${absOutputPath})`,
+          );
+    };
 
   setupDevServerOpts({
     bundleConfigs,
@@ -59,13 +103,19 @@ class Bundler {
     bundleConfigs: defaultWebpack.Configuration[];
     bundleImplementor?: typeof defaultWebpack;
   }): IServerOpts {
-    const compiler = bundleImplementor(bundleConfigs);
-    // @ts-ignore
+    const compiler = bundleImplementor.webpack(bundleConfigs);
+    const { ssr, devServer } = this.config;
+    // 这里不做 winPath 处理，是为了和下方的 path.sep 匹配上
     const compilerMiddleware = webpackDevMiddleware(compiler, {
+      // must be /, otherwise it will exec next()
       publicPath: '/',
       logLevel: 'silent',
+      // if `ssr` set false, next() into server-side render
+      ...(ssr ? { index: false } : {}),
+      writeToDisk: devServer && devServer?.writeToDisk,
       watchOptions: {
-        ignored: /node_modules/,
+        // not watch outputPath dir and node_modules
+        ignored: this.getIgnoredWatchRegExp(),
       },
     });
 
@@ -141,4 +191,4 @@ class Bundler {
   }
 }
 
-export { Bundler, ConfigType, defaultWebpack as webpack };
+export { Bundler, BundlerConfigType, defaultWebpack as webpack };

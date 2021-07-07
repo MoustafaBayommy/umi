@@ -2,6 +2,7 @@
 /packages/*/lib
 /packages/*/dist
 /packages/*/node_modules
+/packages/deps/bundles/node_modules
 /coverage
 /.nyc_output
 /.changelog
@@ -12,3 +13,15 @@
 .umi-test
 **/fixtures/**/dist
 .now
+**/*.less.d.ts
+**/*.css.d.ts
+report.*.json
+output.txt
+/examples/*/dist
+/packages/bundler-webpack/src/fixtures/outputPath/bar
+/examples/**/node_modules
+/examples/*/yarn.lock
+/examples/*/app/public
+/examples/*/logs
+/examples/*/run
+/examples/*/.idea

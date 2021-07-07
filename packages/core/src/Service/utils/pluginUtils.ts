@@ -1,14 +1,14 @@
-import { basename, dirname, extname, join, relative } from 'path';
-import { existsSync } from 'fs';
-import camelcase from 'camelcase';
-import assert from 'assert';
 import {
   compatESModuleRequire,
   createDebug,
+  lodash,
+  pkgUp,
   resolve,
   winPath,
-  pkgUp,
 } from '@umijs/utils';
+import assert from 'assert';
+import { existsSync } from 'fs';
+import { basename, dirname, extname, join, relative } from 'path';
 import { PluginType } from '../enums';
 import { IPackage, IPlugin } from '../types';
 
@@ -61,6 +61,13 @@ function getPluginsOrPresets(type: PluginType, opts: IOpts): string[] {
       type === PluginType.preset ? 'userConfigPresets' : 'userConfigPlugins'
     ] as any) || []),
   ].map((path) => {
+    if (typeof path !== 'string') {
+      throw new Error(
+        `Plugin resolved failed, Please check your plugins config, it must be array of string.\nError Plugin Config: ${JSON.stringify(
+          path,
+        )}`,
+      );
+    }
     return resolve.sync(path, {
       basedir: opts.cwd,
       extensions: ['.js', '.ts'],
@@ -74,7 +81,7 @@ function getPluginsOrPresets(type: PluginType, opts: IOpts): string[] {
 function nameToKey(name: string) {
   return name
     .split('.')
-    .map((part) => camelcase(part))
+    .map((part) => lodash.camelCase(part))
     .join('.');
 }
 

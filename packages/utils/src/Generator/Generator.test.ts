@@ -1,7 +1,7 @@
-import { join } from 'path';
-import Generator from './Generator';
 import { readFileSync } from 'fs';
+import { join } from 'path';
 import { rimraf } from '../index';
+import Generator from './Generator';
 
 const fixtures = join(__dirname, 'fixtures');
 
@@ -11,6 +11,10 @@ test('normal', async () => {
   rimraf.sync(dist);
   const target = join(dist, 'a.js');
   class NormalGenerator extends Generator {
+    prompting() {
+      return [] as any;
+    }
+
     async writing(): Promise<any> {
       this.copyTpl({
         context: {

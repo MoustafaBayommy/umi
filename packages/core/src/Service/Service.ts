@@ -1,13 +1,12 @@
-import { join } from 'path';
-import { EventEmitter } from 'events';
-import assert from 'assert';
+import { AsyncSeriesWaterfallHook } from '@umijs/deps/compiled/tapable';
 import { BabelRegister, lodash, NodeEnv } from '@umijs/utils';
-import { AsyncSeriesWaterfallHook } from 'tapable';
+import assert from 'assert';
+import { EventEmitter } from 'events';
 import { existsSync } from 'fs';
+import { join } from 'path';
+import Config from '../Config/Config';
+import { getUserConfigWithKey } from '../Config/utils/configUtils';
 import Logger from '../Logger/Logger';
-import { pathToObj, resolvePlugins, resolvePresets } from './utils/pluginUtils';
-import loadDotEnv from './utils/loadDotEnv';
-import PluginAPI from './PluginAPI';
 import {
   ApplyPluginsType,
   ConfigChangeType,
@@ -15,10 +14,12 @@ import {
   PluginType,
   ServiceStage,
 } from './enums';
-import { ICommand, IHook, IPackage, IPlugin, IPreset } from './types';
-import Config from '../Config/Config';
-import { getUserConfigWithKey } from '../Config/utils/configUtils';
 import getPaths from './getPaths';
+import PluginAPI from './PluginAPI';
+import { ICommand, IHook, IPackage, IPlugin, IPreset } from './types';
+import isPromise from './utils/isPromise';
+import loadDotEnv from './utils/loadDotEnv';
+import { pathToObj, resolvePlugins, resolvePresets } from './utils/pluginUtils';
 
 const logger = new Logger('umi:core:Service');
 
@@ -27,6 +28,7 @@ export interface IServiceOpts {
   pkg?: IPackage;
   presets?: string[];
   plugins?: string[];
+  configFiles?: string[];
   env?: NodeEnv;
 }
 
@@ -43,7 +45,7 @@ export default class Service extends EventEmitter {
   pkg: IPackage;
   skipPluginIds: Set<string> = new Set<string>();
   // lifecycle stage
-  stage: ServiceStage = ServiceStage.uninitiialized;
+  stage: ServiceStage = ServiceStage.uninitialized;
   // registered commands
   commands: {
     [name: string]: ICommand | string;
@@ -112,10 +114,15 @@ export default class Service extends EventEmitter {
 
     // get user config without validation
     logger.debug('get user config');
+    const configFiles = opts.configFiles;
     this.configInstance = new Config({
       cwd: this.cwd,
       service: this,
       localConfig: this.env === 'development',
+      configFiles:
+        Array.isArray(configFiles) && !!configFiles[0]
+          ? configFiles
+          : undefined,
     });
     this.userConfig = this.configInstance.getUserConfig();
     logger.debug('userConfig:');
@@ -173,14 +180,14 @@ export default class Service extends EventEmitter {
   loadEnv() {
     const basePath = join(this.cwd, '.env');
     const localPath = `${basePath}.local`;
-    loadDotEnv(basePath);
     loadDotEnv(localPath);
+    loadDotEnv(basePath);
   }
 
   async init() {
     this.setStage(ServiceStage.init);
     // we should have the final hooksByPluginId which is added with api.register()
-    this.initPresetsAndPlugins();
+    await this.initPresetsAndPlugins();
 
     // collect false configs, then add to this.skipPluginIds
     // skipPluginIds include two parts:
@@ -213,7 +220,7 @@ export default class Service extends EventEmitter {
 
     // plugin is totally ready
     this.setStage(ServiceStage.pluginReady);
-    this.applyPlugins({
+    await this.applyPlugins({
       key: 'onPluginReady',
       type: ApplyPluginsType.event,
     });
@@ -251,17 +258,17 @@ export default class Service extends EventEmitter {
     });
   }
 
-  initPresetsAndPlugins() {
+  async initPresetsAndPlugins() {
     this.setStage(ServiceStage.initPresets);
     this._extraPlugins = [];
     while (this.initialPresets.length) {
-      this.initPreset(this.initialPresets.shift()!);
+      await this.initPreset(this.initialPresets.shift()!);
     }
 
     this.setStage(ServiceStage.initPlugins);
     this._extraPlugins.push(...this.initialPlugins);
     while (this._extraPlugins.length) {
-      this.initPlugin(this._extraPlugins.shift()!);
+      await this.initPlugin(this._extraPlugins.shift()!);
     }
   }
 
@@ -313,7 +320,15 @@ export default class Service extends EventEmitter {
     });
   }
 
-  initPreset(preset: IPreset) {
+  async applyAPI(opts: { apply: Function; api: PluginAPI }) {
+    let ret = opts.apply()(opts.api);
+    if (isPromise(ret)) {
+      ret = await ret;
+    }
+    return ret || {};
+  }
+
+  async initPreset(preset: IPreset) {
     const { id, key, apply } = preset;
     preset.isPreset = true;
 
@@ -322,7 +337,10 @@ export default class Service extends EventEmitter {
     // register before apply
     this.registerPlugin(preset);
     // TODO: ...defaultConfigs 考虑要不要支持，可能这个需求可以通过其他渠道实现
-    const { presets, plugins, ...defaultConfigs } = apply()(api) || {};
+    const { presets, plugins, ...defaultConfigs } = await this.applyAPI({
+      api,
+      apply,
+    });
 
     // register extra presets and plugins
     if (presets) {
@@ -348,7 +366,7 @@ export default class Service extends EventEmitter {
     const extraPresets = lodash.clone(this._extraPresets);
     this._extraPresets = [];
     while (extraPresets.length) {
-      this.initPreset(extraPresets.shift()!);
+      await this.initPreset(extraPresets.shift()!);
     }
 
     if (plugins) {
@@ -368,14 +386,14 @@ export default class Service extends EventEmitter {
     }
   }
 
-  initPlugin(plugin: IPlugin) {
+  async initPlugin(plugin: IPlugin) {
     const { id, key, apply } = plugin;
 
     const api = this.getPluginAPI({ id, key, service: this });
 
     // register before apply
     this.registerPlugin(plugin);
-    apply()(api);
+    await this.applyAPI({ api, apply });
   }
 
   getPluginOptsWithKey(key: string) {
@@ -529,6 +547,7 @@ ${name} from ${plugin.path} register failed.`);
       key: 'onStart',
       type: ApplyPluginsType.event,
       args: {
+        name,
         args,
       },
     });
